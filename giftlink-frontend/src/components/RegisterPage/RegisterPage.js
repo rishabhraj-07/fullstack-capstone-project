@@ -1,16 +1,53 @@
 import React, { useState } from 'react';
 import './RegisterPage.css';
+import { urlConfig } from '../../config';
+import { useAppContext } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function RegisterPage() {
-    // useState hook variables for firstName, lastName, email, and password
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showerr, setShowerr] = useState('');
 
-    // Function invoked when Register button is clicked
-    const handleRegister = async () => {
-        console.log("Register invoked");
+    const navigate = useNavigate();
+    const { setIsLoggedIn } = useAppContext();
+
+    const handleRegister = async (e) => {
+        if (e) e.preventDefault();
+
+        try {
+            const response = await fetch(`${urlConfig.backendUrl}/api/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    password: password
+                })
+            });
+
+            const json = await response.json();
+
+            if (json.authtoken) {
+                sessionStorage.setItem('auth-token', json.authtoken);
+                sessionStorage.setItem('name', firstName);
+                sessionStorage.setItem('email', json.email);
+                setIsLoggedIn(true);
+                navigate('/app');
+            } else {
+                if (json.error) {
+                    setShowerr(json.error);
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            setShowerr('Registration failed. Please try again.');
+        }
     };
 
     return (
@@ -19,6 +56,8 @@ function RegisterPage() {
                 <div className="col-md-6 col-lg-4">
                     <div className="register-card p-4 border rounded">
                         <h2 className="text-center mb-4 font-weight-bold">Register</h2>
+
+                        {showerr && <div className="alert alert-danger">{showerr}</div>}
 
                         {/* First Name Input */}
                         <div className="mb-3">
