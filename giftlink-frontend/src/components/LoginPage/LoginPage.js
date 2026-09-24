@@ -1,14 +1,47 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
+import { urlConfig } from '../../config';
+import { useAppContext } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function LoginPage() {
-    // useState hook variables for email and password
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [bearerToken, setBearerToken] = useState('');
 
-    // Function invoked when Login button is clicked
-    const handleLogin = async () => {
-        console.log("Inside handleLogin");
+    const navigate = useNavigate();
+    const { setIsLoggedIn } = useAppContext();
+
+    const handleLogin = async (e) => {
+        if (e) e.preventDefault();
+
+        try {
+            const res = await fetch(`${urlConfig.backendUrl}/api/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${bearerToken}`
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+
+            const json = await res.json();
+
+            if (json.authtoken) {
+                sessionStorage.setItem('auth-token', json.authtoken);
+                sessionStorage.setItem('name', json.userName);
+                sessionStorage.setItem('email', json.userEmail);
+                setIsLoggedIn(true);
+                navigate('/app');
+            } else {
+                console.error(json.error || 'Login failed');
+            }
+        } catch (err) {
+            console.error('Error during login:', err);
+        }
     };
 
     return (
